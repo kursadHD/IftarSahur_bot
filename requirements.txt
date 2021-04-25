@@ -1,4 +1,5 @@
 pyrogram
+tgcrypto
 unidecode
 python-dotenv
 pytz
