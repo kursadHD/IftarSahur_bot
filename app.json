@@ -20,10 +20,5 @@
       "description": "https://my.telegram.org/apps adresinden alabilirsiniz",
       "required": true
     }
-  },
-  "buildpacks": [
-    {
-      "url": "heroku/python"
-    }
-  ]
+  }
 }
