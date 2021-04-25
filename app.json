@@ -1,24 +1,31 @@
 {
-  "name": "IftarSahur_bot",
-  "description": "İftar ve Sahur Saatlerini Gösteren Basit Telegram Botu",
+  "name": "IftarSahurBot",
+  "description": "iftar ve sahur vakitleri için basit telegram botu",
   "keywords": [
     "telegram",
     "iftar",
     "sahur",
+    "ramazan",
+    "ezan"
   ],
   "repository": "https://github.com/kursadHD/IftarSahur_bot",
   "env": {
     "BOT_TOKEN": {
-      "description": "@BotFather'dan alabilirsiniz",
+      "description": "A bot token from @BotFather.",
       "required": true
     },
     "API_ID": {
-      "description": "https://my.telegram.org/apps adresinden alabilirsiniz",
+      "description": "An app ID from https://my.telegram.org/apps.",
       "required": true
     },
     "API_HASH": {
-      "description": "https://my.telegram.org/apps adresinden alabilirsiniz",
+      "description": "An app hash from https://my.telegram.org/apps.",
       "required": true
     }
-  }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
 }
