@@ -14,6 +14,7 @@ load_dotenv('config.env')
 BOT_TOKEN = environ.get('BOT_TOKEN', None)
 API_ID = int(environ.get('API_ID', None))
 API_HASH = environ.get('API_HASH', None)
+BOT_USERNAME = environ.get('BOT_USERNAME', None)
 
 PREFIX = ["/", "!", ".", "-", ">"]
 
@@ -35,12 +36,12 @@ def get_data(ilceid):
 	return {'bugun': [row_bugun[1], row_bugun[5]], 'yarin': [row_yarin[1], row_yarin[5]]}
 
 
-@app.on_message(f.command('start', PREFIX))
+@app.on_message(f.command(['start', f'start{BOT_USERNAME}'], PREFIX))
 async def start(client, msg):
-	await msg.reply_text('İlk kullanım: \n`/iftar <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/iftar` yazarak kullanabilirsiniz.')
+	await msg.reply_text('/sahur \n/iftar')
 
 
-@app.on_message(f.command('iftar', PREFIX))
+@app.on_message(f.command(['iftar', f'iftar{BOT_USERNAME}'], PREFIX))
 async def iftar(client, msg):
 	global users
 
@@ -55,7 +56,7 @@ async def iftar(client, msg):
 				il = users[uid][0]
 				ilce = users[uid][1]
 		else:
-			return await msg.reply_text('İlk kullanım: \n`/sahur <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/sahur` yazarak kullanabilirsiniz.')
+			return await msg.reply_text('İlk kullanım: \n`/iftar <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/iftar` yazarak kullanabilirsiniz.')
 	elif len(tmp) == 2:
 		il = tmp[1]
 		ilce = tmp[1]
@@ -79,18 +80,18 @@ async def iftar(client, msg):
 			bugun_t = datetime.now(tz).timestamp() # şu anın timestamp'i (utc+3)
 			bugun = datetime.fromtimestamp(bugun_t, tz).strftime('%d.%m.%Y') 
 			ezan_saat = get_data(idjson[il][ilce])['bugun'][1] # bugünün ezan vakti
-			ezan_t = datetime.strptime(f'{ezan_saat} {bugun}', '%H:%M %d.%m.%Y').timestamp() # bugünkü ezan saatinin timestamp'i
+			ezan_t = datetime.strptime(f'{ezan_saat} {bugun} +0300', '%H:%M %d.%m.%Y %z').timestamp() # bugünkü ezan saatinin timestamp'i
 			if ezan_t < bugun_t: # ezan vakti geçmişse
 				tmp_t = bugun_t + 24*60*60 # bir sonraki güne geçmek için
 				yarin = datetime.fromtimestamp(tmp_t, tz).strftime('%d.%m.%Y')
 				ezan_saat = get_data(idjson[il][ilce])['yarin'][1] # yarının ezan vakti
-				ezan_t = datetime.strptime(f'{ezan_saat} {yarin}', '%H:%M %d.%m.%Y').timestamp() # yarınki ezan saatinin timestamp'i
+				ezan_t = datetime.strptime(f'{ezan_saat} {yarin} +0300', '%H:%M %d.%m.%Y %z').timestamp() # yarınki ezan saatinin timestamp'i
 			kalan = ezan_t - bugun_t # kalan süreyi hesaplayalım
 			h = int(kalan / 3600) # kalan saat
 			m = int((kalan % 3600) / 60 ) # kalan dakika
 			_kalan = f'{h} saat, {m} dakika' 
 
-			mesaj = f'{ilce}\nSıradaki Sahur Saati: `{ezan_saat}`\nSıradaki sahura kalan süre: `{_kalan}`'
+			mesaj = f'{ilce}\nSıradaki İftar Saati: `{ezan_saat}`\nSıradaki iftara kalan süre: `{_kalan}`'
 			await msg.reply_text(mesaj)
 		else:
 			await msg.reply_text(f'{ilce} bulunamadı.')
@@ -105,7 +106,7 @@ async def iftar(client, msg):
 
 
 
-@app.on_message(f.command('sahur', PREFIX))
+@app.on_message(f.command(['sahur', f'sahur{BOT_USERNAME}'], PREFIX))
 async def iftar(client, msg):
 	global users
 
@@ -115,7 +116,7 @@ async def iftar(client, msg):
 	if len(tmp) == 1: 
 		if uid in users.keys():
 			if users[uid] == []:
-				return await msg.reply_text('İlk kullanım: \n`/iftar <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/iftar` yazarak kullanabilirsiniz.')
+				return await msg.reply_text('İlk kullanım: \n`/sahur <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/sahur` yazarak kullanabilirsiniz.')
 			else:
 				il = users[uid][0]
 				ilce = users[uid][1]
@@ -144,12 +145,12 @@ async def iftar(client, msg):
 			bugun_t = datetime.now(tz).timestamp() # şu anın timestamp'i (utc+3)
 			bugun = datetime.fromtimestamp(bugun_t, tz).strftime('%d.%m.%Y')
 			ezan_saat = get_data(idjson[il][ilce])['bugun'][0]
-			ezan_t = datetime.strptime(f'{ezan_saat} {bugun}', '%H:%M %d.%m.%Y').timestamp() # bugünkü ezan saatinin timestamp'i
+			ezan_t = datetime.strptime(f'{ezan_saat} {bugun} +0300', '%H:%M %d.%m.%Y %z').timestamp() # bugünkü ezan saatinin timestamp'i
 			if ezan_t < bugun_t: # ezan vakti geçmişse
 				tmp_t = bugun_t + 24*60*60 # bir sonraki güne geçmek için
 				yarin = datetime.fromtimestamp(tmp_t, tz).strftime('%d.%m.%Y')
 				ezan_saat = get_data(idjson[il][ilce])['bugun'][0] # yarının ezan vaktini çekelim
-				ezan_t = datetime.strptime(f'{ezan_saat} {yarin}', '%H:%M %d.%m.%Y').timestamp() # yarınki ezan saatinin timestamp'i
+				ezan_t = datetime.strptime(f'{ezan_saat} {yarin} +0300', '%H:%M %d.%m.%Y %z').timestamp() # yarınki ezan saatinin timestamp'i
 			kalan = ezan_t - bugun_t # kalan süreyi hesaplayalım
 			h = int(kalan / 3600) # kalan saat
 			m = int((kalan % 3600) / 60 ) # kalan dakika
