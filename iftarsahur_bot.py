@@ -38,7 +38,7 @@ def get_data(ilceid):
 
 @app.on_message(f.command(['start', f'start{BOT_USERNAME}'], PREFIX))
 async def start(client, msg):
-	await msg.reply_text('/sahur \n/iftar')
+	await msg.reply_text('Geliştirici 📬 @Azerbesk')
 
 
 @app.on_message(f.command(['iftar', f'iftar{BOT_USERNAME}'], PREFIX))
