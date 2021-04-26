@@ -11,15 +11,19 @@
   "repository": "https://github.com/kursadHD/IftarSahur_bot",
   "env": {
     "BOT_TOKEN": {
-      "description": "A bot token from @BotFather.",
+      "description": "@BotFather'dan alın",
+      "required": true
+    },
+    "BOT_USERNAME": {
+      "description": "Botunuzun kullanıcı adı",
       "required": true
     },
     "API_ID": {
-      "description": "An app ID from https://my.telegram.org/apps.",
+      "description": "https://my.telegram.org/apps adresinden alın",
       "required": true
     },
     "API_HASH": {
-      "description": "An app hash from https://my.telegram.org/apps.",
+      "description": "https://my.telegram.org/apps adresinden alın",
       "required": true
     }
   },
