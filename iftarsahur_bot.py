@@ -26,14 +26,14 @@ CACHE_LOCK = threading.Lock()
 app = Client("iftarsahur_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN, parse_mode="markdown")
 
 def dump(data: dict) -> None:
-	with CACHE_LOCK:
-		json.dump(data, open('cache.json', 'w'), indent=4)
+    with CACHE_LOCK:
+        json.dump(data, open('cache.json', 'w'), indent=4)
 
 def load() -> None:
-	try:
-		return json.load(open('cache.json'))
-	except:
-		return {}
+    try:
+        return json.load(open('cache.json'))
+    except:
+        return {}
 
 
 users: Dict[int, List[str]] = load()
@@ -43,152 +43,152 @@ idjson = {"ADANA":{"ADANA":"9146","ALADAG":"9147","CEYHAN":"9148","FEKE":"9149",
 tz = pytz.timezone("Europe/Istanbul")
 
 async def get_data(ilceid: str) -> Dict[str, List[str]]:
-	async with aiohttp.ClientSession() as session:
-		async with session.get(f"http://namazvakitleri.diyanet.gov.tr/tr-TR/{ilceid}/ilce-icin-namaz-vakti") as response:
-			data = await response.text()
-			response = data.split('<tbody>')[1].split('</tbody>')[0]
-			resp_bugun = response.split('<tr>')[1].split('</tr>')[0]
-			row_bugun = re.findall('<td>(.*?)</td>', resp_bugun)
-			resp_yarin = response.split('<tr>')[2].split('</tr>')[0]
-			row_yarin = re.findall('<td>(.*?)</td>', resp_yarin)
-			return {'bugun': [row_bugun[1], row_bugun[5]], 'yarin': [row_yarin[1], row_yarin[5]]}
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"http://namazvakitleri.diyanet.gov.tr/tr-TR/{ilceid}/ilce-icin-namaz-vakti") as response:
+            data = await response.text()
+            response = data.split('<tbody>')[1].split('</tbody>')[0]
+            resp_bugun = response.split('<tr>')[1].split('</tr>')[0]
+            row_bugun = re.findall('<td>(.*?)</td>', resp_bugun)
+            resp_yarin = response.split('<tr>')[2].split('</tr>')[0]
+            row_yarin = re.findall('<td>(.*?)</td>', resp_yarin)
+            return {'bugun': [row_bugun[1], row_bugun[5]], 'yarin': [row_yarin[1], row_yarin[5]]}
 
 
 @app.on_message(f.command(['start', f'start{BOT_USERNAME}'], PREFIX))
 async def start(client: Client, msg: types.Message):
-	await msg.reply_text('/sahur \n/iftar')
+    await msg.reply_text('/sahur \n/iftar')
 
 
 @app.on_message(f.command(['iftar', f'iftar{BOT_USERNAME}'], PREFIX))
 async def iftar(client: Client, msg: types.Message):
-	global users
+    global users
 
-	uid = msg.from_user.id
-	tmp = unidecode(msg.text).upper().split()
-	
-	if len(tmp) == 1: 
-		if uid in users.keys():
-			if users[uid] == []:
-				return await msg.reply_text('İlk kullanım: \n`/iftar <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/iftar` yazarak kullanabilirsiniz.')
-			else:
-				il = users[uid][0]
-				ilce = users[uid][1]
-		else:
-			return await msg.reply_text('İlk kullanım: \n`/iftar <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/iftar` yazarak kullanabilirsiniz.')
-	elif len(tmp) == 2:
-		il = tmp[1]
-		ilce = tmp[1]
-		users[uid] = [il, ilce]
+    uid = msg.from_user.id
+    tmp = unidecode(msg.text).upper().split()
+    
+    if len(tmp) == 1: 
+        if uid in users.keys():
+            if users[uid] == []:
+                return await msg.reply_text('İlk kullanım: \n`/iftar <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/iftar` yazarak kullanabilirsiniz.')
+            else:
+                il = users[uid][0]
+                ilce = users[uid][1]
+        else:
+            return await msg.reply_text('İlk kullanım: \n`/iftar <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/iftar` yazarak kullanabilirsiniz.')
+    elif len(tmp) == 2:
+        il = tmp[1]
+        ilce = tmp[1]
+        users[uid] = [il, ilce]
 
-	elif len(tmp) == 3:
-		il = tmp[1]
-		ilce = tmp[2]
-		users[uid] = [il, ilce]
+    elif len(tmp) == 3:
+        il = tmp[1]
+        ilce = tmp[2]
+        users[uid] = [il, ilce]
 
-	elif len(tmp) == 4:
-		il = tmp[1]
-		ilce = f'{tmp[2]} {tmp[3]}'
-		users[uid] = [il, ilce]
+    elif len(tmp) == 4:
+        il = tmp[1]
+        ilce = f'{tmp[2]} {tmp[3]}'
+        users[uid] = [il, ilce]
 
-	else:
-		return await msg.reply_text('Girilen il/ilçe bulunamadı.')
+    else:
+        return await msg.reply_text('Girilen il/ilçe bulunamadı.')
 
-	if il in idjson: # girilen il, il listemizde varsa
-		if ilce in idjson[il]: # girilen ilce, ilce listemizde varsa
-			bugun_t = datetime.now(tz).timestamp() # şu anın timestamp'i (utc+3)
-			bugun = datetime.fromtimestamp(bugun_t, tz).strftime('%d.%m.%Y') 
-			vakitler = await get_data(idjson[il][ilce])
-			ezan_saat = vakitler['bugun'][1] # bugünün ezan vakti
-			ezan_t = datetime.strptime(f'{ezan_saat} {bugun} +0300', '%H:%M %d.%m.%Y %z').timestamp() # bugünkü ezan saatinin timestamp'i
-			if ezan_t < bugun_t: # ezan vakti geçmişse
-				tmp_t = bugun_t + 24*60*60 # bir sonraki güne geçmek için
-				yarin = datetime.fromtimestamp(tmp_t, tz).strftime('%d.%m.%Y')
-				ezan_saat = vakitler['yarin'][1] # yarının ezan vakti
-				ezan_t = datetime.strptime(f'{ezan_saat} {yarin} +0300', '%H:%M %d.%m.%Y %z').timestamp() # yarınki ezan saatinin timestamp'i
-			kalan = ezan_t - bugun_t # kalan süreyi hesaplayalım
-			h = int(kalan / 3600) # kalan saat
-			m = int((kalan % 3600) / 60 ) # kalan dakika
-			_kalan = f'{h} saat, {m} dakika' 
+    if il in idjson: # girilen il, il listemizde varsa
+        if ilce in idjson[il]: # girilen ilce, ilce listemizde varsa
+            bugun_t = datetime.now(tz).timestamp() # şu anın timestamp'i (utc+3)
+            bugun = datetime.fromtimestamp(bugun_t, tz).strftime('%d.%m.%Y') 
+            vakitler = await get_data(idjson[il][ilce])
+            ezan_saat = vakitler['bugun'][1] # bugünün ezan vakti
+            ezan_t = datetime.strptime(f'{ezan_saat} {bugun} +0300', '%H:%M %d.%m.%Y %z').timestamp() # bugünkü ezan saatinin timestamp'i
+            if ezan_t < bugun_t: # ezan vakti geçmişse
+                tmp_t = bugun_t + 24*60*60 # bir sonraki güne geçmek için
+                yarin = datetime.fromtimestamp(tmp_t, tz).strftime('%d.%m.%Y')
+                ezan_saat = vakitler['yarin'][1] # yarının ezan vakti
+                ezan_t = datetime.strptime(f'{ezan_saat} {yarin} +0300', '%H:%M %d.%m.%Y %z').timestamp() # yarınki ezan saatinin timestamp'i
+            kalan = ezan_t - bugun_t # kalan süreyi hesaplayalım
+            h = int(kalan / 3600) # kalan saat
+            m = int((kalan % 3600) / 60 ) # kalan dakika
+            _kalan = f'{h} saat, {m} dakika' 
 
-			mesaj = f'{ilce}\nSıradaki İftar Saati: `{ezan_saat}`\nSıradaki iftara kalan süre: `{_kalan}`'
-			await msg.reply_text(mesaj)
-		else:
-			await msg.reply_text(f'{ilce} bulunamadı.')
-			users[uid] = [il, il] # ilce bulunamadıysa ilce yerine de ili kaydediyoruz
-	else:
-		if il == ilce:
-			il_ilce = f'{il}'
-		else:
-			il_ilce = f'{il} {ilce}'
-		await msg.reply_text(f'{il_ilce} bulunamadı.')
-		users[uid] = [] # karışıklık olmaması için
-	dump(users)
+            mesaj = f'{ilce}\nSıradaki İftar Saati: `{ezan_saat}`\nSıradaki iftara kalan süre: `{_kalan}`'
+            await msg.reply_text(mesaj)
+        else:
+            await msg.reply_text(f'{ilce} bulunamadı.')
+            users[uid] = [il, il] # ilce bulunamadıysa ilce yerine de ili kaydediyoruz
+    else:
+        if il == ilce:
+            il_ilce = f'{il}'
+        else:
+            il_ilce = f'{il} {ilce}'
+        await msg.reply_text(f'{il_ilce} bulunamadı.')
+        users[uid] = [] # karışıklık olmaması için
+    dump(users)
 
 
 @app.on_message(f.command(['sahur', f'sahur{BOT_USERNAME}'], PREFIX))
 async def iftar(client, msg):
-	global users
+    global users
 
-	uid = msg.from_user.id
-	tmp = unidecode(msg.text).upper().split()
-	
-	if len(tmp) == 1: 
-		if uid in users.keys():
-			if users[uid] == []:
-				return await msg.reply_text('İlk kullanım: \n`/sahur <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/sahur` yazarak kullanabilirsiniz.')
-			else:
-				il = users[uid][0]
-				ilce = users[uid][1]
-		else:
-			return await msg.reply_text('İlk kullanım: \n`/sahur <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/sahur` yazarak kullanabilirsiniz.')
-	elif len(tmp) == 2:
-		il = tmp[1]
-		ilce = tmp[1]
-		users[uid] = [il, ilce]
+    uid = msg.from_user.id
+    tmp = unidecode(msg.text).upper().split()
+    
+    if len(tmp) == 1: 
+        if uid in users.keys():
+            if users[uid] == []:
+                return await msg.reply_text('İlk kullanım: \n`/sahur <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/sahur` yazarak kullanabilirsiniz.')
+            else:
+                il = users[uid][0]
+                ilce = users[uid][1]
+        else:
+            return await msg.reply_text('İlk kullanım: \n`/sahur <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/sahur` yazarak kullanabilirsiniz.')
+    elif len(tmp) == 2:
+        il = tmp[1]
+        ilce = tmp[1]
+        users[uid] = [il, ilce]
 
-	elif len(tmp) == 3:
-		il = tmp[1]
-		ilce = tmp[2]
-		users[uid] = [il, ilce]
+    elif len(tmp) == 3:
+        il = tmp[1]
+        ilce = tmp[2]
+        users[uid] = [il, ilce]
 
-	elif len(tmp) == 4:
-		il = tmp[1]
-		ilce = f'{tmp[2]} {tmp[3]}'
-		users[uid] = [il, ilce]
+    elif len(tmp) == 4:
+        il = tmp[1]
+        ilce = f'{tmp[2]} {tmp[3]}'
+        users[uid] = [il, ilce]
 
-	else:
-		return await msg.reply_text('Girilen il/ilçe bulunamadı.')
+    else:
+        return await msg.reply_text('Girilen il/ilçe bulunamadı.')
 
-	if il in idjson: # girilen il, il listemizde varsa
-		if ilce in idjson[il]: # girilen ilce, ilce listemizde varsa
-			bugun_t = datetime.now(tz).timestamp() # şu anın timestamp'i (utc+3)
-			bugun = datetime.fromtimestamp(bugun_t, tz).strftime('%d.%m.%Y')
-			vakitler = await get_data(idjson[il][ilce])
-			ezan_saat = vakitler['bugun'][0]
-			ezan_t = datetime.strptime(f'{ezan_saat} {bugun} +0300', '%H:%M %d.%m.%Y %z').timestamp() # bugünkü ezan saatinin timestamp'i
-			if ezan_t < bugun_t: # ezan vakti geçmişse
-				tmp_t = bugun_t + 24*60*60 # bir sonraki güne geçmek için
-				yarin = datetime.fromtimestamp(tmp_t, tz).strftime('%d.%m.%Y')
-				ezan_saat = vakitler['yarin'][0] # yarının ezan vaktini çekelim
-				ezan_t = datetime.strptime(f'{ezan_saat} {yarin} +0300', '%H:%M %d.%m.%Y %z').timestamp() # yarınki ezan saatinin timestamp'i
-			kalan = ezan_t - bugun_t # kalan süreyi hesaplayalım
-			h = int(kalan / 3600) # kalan saat
-			m = int((kalan % 3600) / 60 ) # kalan dakika
-			_kalan = f'{h} saat, {m} dakika' 
+    if il in idjson: # girilen il, il listemizde varsa
+        if ilce in idjson[il]: # girilen ilce, ilce listemizde varsa
+            bugun_t = datetime.now(tz).timestamp() # şu anın timestamp'i (utc+3)
+            bugun = datetime.fromtimestamp(bugun_t, tz).strftime('%d.%m.%Y')
+            vakitler = await get_data(idjson[il][ilce])
+            ezan_saat = vakitler['bugun'][0]
+            ezan_t = datetime.strptime(f'{ezan_saat} {bugun} +0300', '%H:%M %d.%m.%Y %z').timestamp() # bugünkü ezan saatinin timestamp'i
+            if ezan_t < bugun_t: # ezan vakti geçmişse
+                tmp_t = bugun_t + 24*60*60 # bir sonraki güne geçmek için
+                yarin = datetime.fromtimestamp(tmp_t, tz).strftime('%d.%m.%Y')
+                ezan_saat = vakitler['yarin'][0] # yarının ezan vaktini çekelim
+                ezan_t = datetime.strptime(f'{ezan_saat} {yarin} +0300', '%H:%M %d.%m.%Y %z').timestamp() # yarınki ezan saatinin timestamp'i
+            kalan = ezan_t - bugun_t # kalan süreyi hesaplayalım
+            h = int(kalan / 3600) # kalan saat
+            m = int((kalan % 3600) / 60 ) # kalan dakika
+            _kalan = f'{h} saat, {m} dakika' 
 
-			mesaj = f'{ilce}\nSıradaki Sahur Saati: `{ezan_saat}`\nSıradaki sahura kalan süre: `{_kalan}`'
-			await msg.reply_text(mesaj)
-		else:
-			await msg.reply_text(f'{ilce} bulunamadı.')
-			users[uid] = [il, il] # ilce bulunamadıysa ilce yerine de ili kaydediyoruz
-	else:
-		if il == ilce:
-			il_ilce = f'{il}'
-		else:
-			il_ilce = f'{il} {ilce}'
-		await msg.reply_text(f'{il_ilce} bulunamadı.')
-		users[uid] = [] # karışıklık olmaması için
-	dump(users)
+            mesaj = f'{ilce}\nSıradaki Sahur Saati: `{ezan_saat}`\nSıradaki sahura kalan süre: `{_kalan}`'
+            await msg.reply_text(mesaj)
+        else:
+            await msg.reply_text(f'{ilce} bulunamadı.')
+            users[uid] = [il, il] # ilce bulunamadıysa ilce yerine de ili kaydediyoruz
+    else:
+        if il == ilce:
+            il_ilce = f'{il}'
+        else:
+            il_ilce = f'{il} {ilce}'
+        await msg.reply_text(f'{il_ilce} bulunamadı.')
+        users[uid] = [] # karışıklık olmaması için
+    dump(users)
 
 
 
