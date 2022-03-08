@@ -3,4 +3,4 @@ tgcrypto
 unidecode
 python-dotenv
 pytz
-requests
+aiohttp
