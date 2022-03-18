@@ -1,7 +1,7 @@
 import json
 import re
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from os import environ
 from typing import Dict, List
 
@@ -53,8 +53,12 @@ idjson = {"ADANA":{"ADANA":"9146","ALADAG":"9147","CEYHAN":"9148","FEKE":"9149",
 
 tz = pytz.timezone("Europe/Istanbul")
 
-
+_cache: Dict[str, Dict[str, List[str]]] = {}
 async def get_data(ilceid: str) -> Dict[str, List[str]]:
+    bugun = datetime.now(tz).strftime("%d.%m.%Y")
+    yarin = (datetime.now(tz) + timedelta(days=1)).strftime("%d.%m.%Y")
+    if _cache.get(ilceid) and _cache[ilceid].get(bugun) and _cache[ilceid].get(yarin):
+            return {'bugun': _cache[ilceid][bugun], 'yarin': _cache[ilceid][yarin]}
     async with aiohttp.ClientSession() as session:
         async with session.get(f"http://namazvakitleri.diyanet.gov.tr/tr-TR/{ilceid}/ilce-icin-namaz-vakti") as response:
             data = await response.text()
@@ -63,6 +67,9 @@ async def get_data(ilceid: str) -> Dict[str, List[str]]:
             row_bugun = re.findall('<td>(.*?)</td>', resp_bugun)
             resp_yarin = response.split('<tr>')[2].split('</tr>')[0]
             row_yarin = re.findall('<td>(.*?)</td>', resp_yarin)
+            _cache[ilceid] = {}
+            _cache[ilceid][bugun] = [row_bugun[1], row_bugun[5]]
+            _cache[ilceid][yarin] = [row_yarin[1], row_yarin[5]]
             return {'bugun': [row_bugun[1], row_bugun[5]], 'yarin': [row_yarin[1], row_yarin[5]]}
 
 
