@@ -1,5 +1,6 @@
 __pycache__
 */__pycache__
 cache.json
+chats.json
 *.session*
 config.env
