@@ -40,10 +40,10 @@ def load(file: str) -> dict:
     except:
         return {}
 
-def dump_chats(data: list) -> None:
+
+def dump_chats(data: dict) -> None:
     with CHATS_LOCK:
         json.dump(data, open('chats.json', 'w'), indent=4)
-
 
 
 users: Dict[int, List[str]] = load('cache.json')
@@ -54,11 +54,13 @@ idjson = {"ADANA":{"ADANA":"9146","ALADAG":"9147","CEYHAN":"9148","FEKE":"9149",
 tz = pytz.timezone("Europe/Istanbul")
 
 _cache: Dict[str, Dict[str, List[str]]] = {}
+
+
 async def get_data(ilceid: str) -> Dict[str, List[str]]:
     bugun = datetime.now(tz).strftime("%d.%m.%Y")
     yarin = (datetime.now(tz) + timedelta(days=1)).strftime("%d.%m.%Y")
     if _cache.get(ilceid) and _cache[ilceid].get(bugun) and _cache[ilceid].get(yarin):
-            return {'bugun': _cache[ilceid][bugun], 'yarin': _cache[ilceid][yarin]}
+        return {'bugun': _cache[ilceid][bugun], 'yarin': _cache[ilceid][yarin]}
     async with aiohttp.ClientSession() as session:
         async with session.get(f"http://namazvakitleri.diyanet.gov.tr/tr-TR/{ilceid}/ilce-icin-namaz-vakti") as response:
             data = await response.text()
@@ -221,7 +223,23 @@ async def inline(client: Client, query: types.InlineQuery):
     if len(tmp) == 1:
         if uid in users.keys():
             if users[uid] == []:
-                return await query.answer([
+                return await query.answer(
+                    [
+                        types.InlineQueryResultArticle(
+                            'İl ve ilçe giriniz.',
+                            types.InputTextMessageContent(
+                                f'İlk kullanım: \n`{BOT_USERNAME} <iftar|sahur> <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/sahur` yazarak kullanabilirsiniz.'
+                            ),
+                            description=f'Kullanım: {BOT_USERNAME} <iftar|sahur> <il> <ilçe (zorunlu değil)>'
+                        )
+                    ],
+                    cache_time=0)
+            else:
+                il = users[uid][0]
+                ilce = users[uid][1]
+        else:
+            return await query.answer(
+                [
                     types.InlineQueryResultArticle(
                         'İl ve ilçe giriniz.',
                         types.InputTextMessageContent(
@@ -229,20 +247,8 @@ async def inline(client: Client, query: types.InlineQuery):
                         ),
                         description=f'Kullanım: {BOT_USERNAME} <iftar|sahur> <il> <ilçe (zorunlu değil)>'
                     )
-                ])
-            else:
-                il = users[uid][0]
-                ilce = users[uid][1]
-        else:
-            return await query.answer([
-                types.InlineQueryResultArticle(
-                    'İl ve ilçe giriniz.',
-                    types.InputTextMessageContent(
-                        f'İlk kullanım: \n`{BOT_USERNAME} <iftar|sahur> <il> <ilçe (zorunlu değil)>` \nSonraki kullanımlarınızda il ilçe ismi yazmanıza gerek yoktur. Sadece `/sahur` yazarak kullanabilirsiniz.'
-                    ),
-                    description=f'Kullanım: {BOT_USERNAME} <iftar|sahur> <il> <ilçe (zorunlu değil)>'
-                )
-            ])
+                ],
+                cache_time=0)
     elif len(tmp) == 2:
         il = tmp[1]
         ilce = tmp[1]
@@ -259,14 +265,16 @@ async def inline(client: Client, query: types.InlineQuery):
         users[uid] = [il, ilce]
 
     else:
-        return await query.answer([
-            types.InlineQueryResultArticle(
-                'Girilen il/ilçe bulunamadı.',
-                types.InputTextMessageContent(
-                    'Girilen il/ilçe bulunamadı.'
+        return await query.answer(
+            [
+                types.InlineQueryResultArticle(
+                    'Girilen il/ilçe bulunamadı.',
+                    types.InputTextMessageContent(
+                        'Girilen il/ilçe bulunamadı.'
+                    )
                 )
-            )
-        ])
+            ],
+            cache_time=0)
 
     if il in idjson:  # girilen il, il listemizde varsa
         if ilce in idjson[il]:  # girilen ilce, ilce listemizde varsa
@@ -286,49 +294,57 @@ async def inline(client: Client, query: types.InlineQuery):
             _kalan = f'{h} saat, {m} dakika'
 
             mesaj = f'{ilce}\nSıradaki {vakit.capitalize()} Saati: `{ezan_saat}`\nSıradaki {vakit}a kalan süre: `{_kalan}`'
-            await query.answer([
-                types.InlineQueryResultArticle(
-                    ilce,
-                    types.InputTextMessageContent(
-                        mesaj
+            await query.answer(
+                [
+                    types.InlineQueryResultArticle(
+                        ilce,
+                        types.InputTextMessageContent(
+                            mesaj
+                        )
                     )
-                )
-            ])
+                ],
+                cache_time=0)
         else:
-            await query.answer([
-                types.InlineQueryResultArticle(
-                    f'{ilce} bulunumadı.',
-                    types.InputTextMessageContent(
-                        f'{ilce} bulunumadı.'
+            await query.answer(
+                [
+                    types.InlineQueryResultArticle(
+                        f'{ilce} bulunumadı.',
+                        types.InputTextMessageContent(
+                            f'{ilce} bulunumadı.'
+                        )
                     )
-                )
-            ])
+                ],
+                cache_time=0)
             users[uid] = [il, il]  # ilce bulunamadıysa ilce yerine de ili kaydediyoruz
     else:
         if il == ilce:
             il_ilce = f'{il}'
         else:
             il_ilce = f'{il} {ilce}'
-        await query.answer([
-            types.InlineQueryResultArticle(
-                f'{il_ilce} bulunumadı.',
-                types.InputTextMessageContent(
-                    f'{il_ilce} bulunumadı.'
+        await query.answer(
+            [
+                types.InlineQueryResultArticle(
+                    f'{il_ilce} bulunumadı.',
+                    types.InputTextMessageContent(
+                        f'{il_ilce} bulunumadı.'
+                    )
                 )
-            )
-        ])
+            ],
+            cache_time=0)
         users[uid] = []  # karışıklık olmaması için
     dump_users(users)
 
-@app.on_message(group=2)
-async def save_chats(client: Client, message: types.Message):
+
+@app.on_message(group=1)
+async def save_chats(client: Client, msg: types.Message):
     global chats
 
     try:
-        chats[message.chat.id] = message.chat.type
+        chats[msg.chat.id] = msg.chat.type
     except:
         pass
     dump_chats(chats)
+
 
 @app.on_message(f.command('istatistik', PREFIX) & f.user(SUDO))
 async def stat(client: Client, msg: types.Message):
@@ -343,13 +359,15 @@ async def stat(client: Client, msg: types.Message):
             group += 1
     await msg.reply_text(f'**Gruplar: **`{group}`\n**Özel Mesajlar: **`{private}`')
 
+
 @app.on_message(f.command('duyuru', PREFIX) & f.user(SUDO))
 async def duyuru(client: Client, msg: types.Message):
     global chats
 
     if msg.reply_to_message:
         duyuru = msg.reply_to_message
-        for chat_id in chats.keys():
+        chat_ids = list(chats.keys())
+        for chat_id in chat_ids:
             try:
                 await duyuru.copy(chat_id)
             except:
