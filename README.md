@@ -14,5 +14,12 @@ pip3 install -r requirements.txt
 python3 iftarsahur_bot.py
 ```
 
+## Not
+- Bota Türkiye dışındaki ülkeleri eklemek için `parse.py` dosyasını kullanabilirsiniz.
+```bash
+python3 parse.py <ülke ismi>
+#örnek: python3 parse.py Azerbaijan
+```
+
 ## İletişim
 Telegram: [@kursadHD](https://t.me/kursadHD)
